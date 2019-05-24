@@ -210,8 +210,7 @@ def asymsched(apps, bandwidths, remote_access):
 
     return apps, placements, min_pid, do_migration
 
-
-if __name__ == '__main__':
+def asymsched_test():
     """ 正确性测试
 
     模拟CPU一共有四个节点。
@@ -251,3 +250,7 @@ if __name__ == '__main__':
 
     pdb.set_trace()
     print(test_min_pid, test_do_migration)
+
+
+if __name__ == '__main__':
+    asymsched_test()

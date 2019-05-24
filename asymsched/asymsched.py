@@ -24,7 +24,7 @@ def do_placements(num_nodes, apps):
     num_used_nodes = 0
     for app in apps:
         for cluster in app.clusters:
-            num_used_nodes += cluster.num_nodes
+            num_used_nodes += len(cluster.current_nodes)
 
     permutations = itertools.permutations(range(0, num_nodes), num_used_nodes)
 
@@ -35,7 +35,7 @@ def do_placements(num_nodes, apps):
         for app_id, app in enumerate(apps):
             for cluster_id, cluster in enumerate(app.clusters):
                 placements[p_id].placements[app_id].append([])
-                for _ in range(cluster.num_nodes):
+                for _ in cluster.current_nodes:
                     placements[p_id].placements[app_id][cluster_id].append(permutation[next_node])
                     next_node += 1
 
@@ -232,17 +232,13 @@ def asymsched_test():
     test_apps = []
     test_apps.append(App())
     test_apps[0].tt = 50000
-    test_apps[0].num_cluster = 1
     test_apps[0].clusters.append(Cluster())
-    test_apps[0].clusters[0].num_nodes = 2
     test_apps[0].clusters[0].memories = [200, 400]
     test_apps[0].clusters[0].current_nodes = [0, 1]
 
     test_apps.append(App())
     test_apps[1].tt = 50000
-    test_apps[1].num_cluster = 1
     test_apps[1].clusters.append(Cluster())
-    test_apps[1].clusters[0].num_nodes = 2
     test_apps[1].clusters[0].memories = [30, 300]
     test_apps[1].clusters[0].current_nodes = [2, 3]
 

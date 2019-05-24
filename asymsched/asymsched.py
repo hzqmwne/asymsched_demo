@@ -249,7 +249,9 @@ def asymsched_test():
     _, _, test_min_pid, test_do_migration = asymsched(test_apps, test_bandwidths, test_remote_access)
 
     print(test_min_pid, test_do_migration)
-
+    for app in test_apps:
+        for cluster in app.clusters:
+            print(cluster.origin_nodes, "==>", cluster.current_nodes)
 
 if __name__ == '__main__':
     asymsched_test()

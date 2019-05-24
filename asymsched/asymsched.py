@@ -1,7 +1,6 @@
 import math
 import itertools
 import sys
-import pdb
 
 from models import Cluster, App, Placement
 
@@ -133,11 +132,9 @@ def check_placement_diff(apps, placement):
 def check_migration(apps, placement):
     """ 计算是否需要迁移
     """
-
     if not check_placement_diff(apps, placement):
         return False
 
-    do_migration = False
     for app_id, app in enumerate(apps):
         migrate_filter = apps[app_id].tt * 0.05
         migrate_factor = apps[app_id].tm
@@ -149,7 +146,7 @@ def check_migration(apps, placement):
         if migrate_factor > migrate_filter:
             return False
 
-    return do_migration
+    return True
 
 def migrate(apps, placement):
     """ 节点迁移
@@ -160,10 +157,10 @@ def migrate(apps, placement):
 
     # 执行迁移
     if do_migration:
-        for app_id, app_placements in enumerate(placement):
-            apps[app_id].origin_nodes = apps[app_id].current_nodes
+        for app_id, app_placements in enumerate(placement.placements):
             for cluster_id, cluster_placement in enumerate(app_placements):
-                apps[app_id][cluster_id].current_nodes = cluster_placement
+                apps[app_id].clusters[cluster_id].origin_nodes = apps[app_id].clusters[cluster_id].current_nodes
+                apps[app_id].clusters[cluster_id].current_nodes = cluster_placement
 
     return do_migration
 
@@ -193,7 +190,8 @@ def asymsched(apps, bandwidths, remote_access):
                 for node_to in cluster.current_nodes:
                     if node_from != node_to:
                         cluster.rbw += remote_access[node_from][node_to]
-                        cluster.weight = math.log(cluster.rbw)
+
+            cluster.weight = math.log(cluster.rbw)
 
     # 计算所有可能的放置策略
     num_nodes = len(bandwidths)
@@ -218,37 +216,38 @@ def asymsched_test():
     """
 
     test_bandwidths = [
-        [5, 4, 5, 6],
-        [3, 2, 1, 4],
-        [1, 4, 5, 7],
-        [4, 5, 3, 2]
+        [0, 3000000000, 1000000000, 1000000000],
+        [3000000000, 0, 1000000000, 1000000000],
+        [1000000000, 1000000000, 0, 7000000000],
+        [1000000000, 1000000000, 7000000000, 0]
     ]
 
     test_remote_access = [
-        [2, 1, 3, 4],
-        [0, 4, 1, 2],
-        [1, 3, 2, 1],
-        [2, 1, 1, 1]
+        [0, 3000000000, 0, 0],
+        [3000000000, 0, 0, 0],
+        [0, 0, 0, 5000],
+        [0, 0, 5000, 0]
     ]
 
     test_apps = []
     test_apps.append(App())
+    test_apps[0].tt = 50000
     test_apps[0].num_cluster = 1
     test_apps[0].clusters.append(Cluster())
     test_apps[0].clusters[0].num_nodes = 2
-    test_apps[0].clusters[0].memories = [20, 40]
+    test_apps[0].clusters[0].memories = [200, 400]
     test_apps[0].clusters[0].current_nodes = [0, 1]
 
     test_apps.append(App())
+    test_apps[1].tt = 50000
     test_apps[1].num_cluster = 1
     test_apps[1].clusters.append(Cluster())
     test_apps[1].clusters[0].num_nodes = 2
-    test_apps[1].clusters[0].memories = [30, 30]
+    test_apps[1].clusters[0].memories = [30, 300]
     test_apps[1].clusters[0].current_nodes = [2, 3]
 
     _, _, test_min_pid, test_do_migration = asymsched(test_apps, test_bandwidths, test_remote_access)
 
-    pdb.set_trace()
     print(test_min_pid, test_do_migration)
 
 

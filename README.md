@@ -96,7 +96,7 @@ app的数据，其中包括的新的放置策略。如：
         {
           "rbw": 10000,
           "weight": 9.210340371976184,
-          "orinal_nodes":[]
+          "orinal_nodes":[],
           "memories": [30, 300],
           "origin_nodes": [2, 3],
           "current_nodes": [0, 1]

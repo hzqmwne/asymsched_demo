@@ -1,0 +1,69 @@
+[
+    {
+        "apps": [
+            {
+                "config": {
+                    "name": "app1",
+                    "thread_n": 8,
+                    "total_memory": 1024,
+                    "compute_per_thread": 60,
+                    "memory_access_per_thread": 512
+                },
+                "best_placement": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                },
+                "worst_placement": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                },
+                "asymsched": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                }
+            },
+            {
+                "config": {
+                    "name": "app2",
+                    "thread_n": 8,
+                    "total_memory": 1024,
+                    "compute_per_thread": 60,
+                    "memory_access_per_thread": 512
+                },
+                "best_placement": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                },
+                "worst_placement": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                },
+                "asymsched": {
+                    "nodes": [
+                        1,
+                        2
+                    ],
+                    "execution_time": 120
+                }
+            }
+        ],
+        "best_total_time": 120,
+        "worst_total_time": 120,
+        "asymsched_total_time": 120
+    }
+]

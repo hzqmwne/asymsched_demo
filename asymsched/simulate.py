@@ -75,7 +75,7 @@ def update_progess(machine, processes, duration):
             new_memory_access = {}
             for node,access in t.memory_access_remainder.items():
                 new_memory_access[node] = access-access*duration*1.0/t.compute_time
-            t.memory_access = new_memory_access
+            t.memory_access_remainder = new_memory_access
 
 def run_placement(machine, processes):
     remote_access = [[0 for j in range(len(machine.bandwidth[0]))] for i in range(len(machine.bandwidth))]
@@ -86,7 +86,7 @@ def run_placement(machine, processes):
         c.memories = []
         total_compute_time = 0
         for t in p.threads:
-            for node,access in t.memory_access.items():
+            for node,access in t.memory_access_remainder.items():
                 remote_access[t.node][node] = access
             total_compute_time += t.compute_time
             c.current_nodes.append(t.node)

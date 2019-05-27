@@ -1,6 +1,8 @@
 # coding:utf8
 
 import random
+import itertools
+import copy
 
 import asymsched
 
@@ -20,6 +22,8 @@ class Thread:
         self.compute_time_done = ctd
         self.memory_access_remainder = ma
         self.time_remainder = 0
+
+        self.finishtime = None
 
 class Process:
     def __init__(self):
@@ -119,14 +123,16 @@ def run_placement(machine, processes):
                     migration_time += cluster.memories[i]*1.0/machine.bandwidth[ori][cur]
     return migration, migration_time
 
-def simulation(machine, processes):
+def simulation(machine, processes, print_result = 1):
     placement_update_interval = 20000
     timer = 0
+    final_timer = 0
     # random.shuffle(processes)
     events = new_event_list(machine, processes, placement_update_interval, timer)
     while 1:
         if len(events) == 0:
-            print("finish time:",timer)
+            # print("finish time:",timer)
+            final_timer = timer
             break
         latest_event = events.pop(0)
         duration = latest_event.timer - timer
@@ -135,6 +141,7 @@ def simulation(machine, processes):
         update_progess(machine, processes, duration)
         if latest_event.type == THREAD_FINISHED:
             # ensure_finished
+            latest_event.thread.finishtime = timer
             pass
         elif latest_event.type == PLACEMENT_UPDATE:
             migration, migration_time = run_placement(machine, processes)
@@ -150,15 +157,26 @@ def simulation(machine, processes):
                     t.memory_access_remainder = new_memory_access
             timer += migration_time
             events = new_event_list(machine, processes, placement_update_interval, timer)
+    for i,p in enumerate(processes):
+        max_time = -1
+        for t in p.threads:
+            max_time = t.finishtime if t.finishtime > max_time else max_time
+        if print_result:
+            print("process",i,"finish time:",max_time)
+    if print_result:
+        print("finish time:",final_timer)
+    return final_timer
 
-def simulation_nomigration(machine, processes):
+def simulation_nomigration(machine, processes, print_result = 1):
     # random.shuffle(processes)
     timer = 0
+    final_timer = 0
     events = calculate_thread_finish_events(machine, processes, timer)
     events.sort(key=lambda e:e.timer)
     while 1:
         if len(events) == 0:
-            print("finish time:",timer)
+            # print("finish time:",timer)
+            final_timer = timer
             break
         latest_event = events.pop(0)
         duration = latest_event.timer
@@ -166,9 +184,97 @@ def simulation_nomigration(machine, processes):
         update_progess(machine, processes, duration)
         if latest_event.type == THREAD_FINISHED:
             # ensure_finished
+            latest_event.thread.finishtime = timer
             pass
         elif latest_event.type == PLACEMENT_UPDATE:
             assert(0)
+    for i,p in enumerate(processes):
+        max_time = -1
+        for t in p.threads:
+            max_time = t.finishtime if t.finishtime > max_time else max_time
+        if print_result:
+            print("process",i,"finish time:",max_time)
+    if print_result:
+        print("finish time:",final_timer)
+    return final_timer
+
+def find_best_and_worse(machine, processes):
+    best_situation_processes = None
+    best_finishtime = 0x7fffffff
+    worse_situation_processes = None
+    worse_finishtime = -1
+    node_count = len(machine.bandwidth)
+
+    thread_count = 0
+    origin_placement = []
+    for p in processes:
+        for t in p.threads:
+            thread_count += 1
+            origin_placement.append(t.node)
+
+    all_placements = [per for per in itertools.permutations(range(node_count),thread_count)]
+
+    for placement in all_placements:
+        migration = {}
+        for i in range(len(origin_placement)):
+            migration[origin_placement[i]] = placement[i]
+        processes_copy = copy.deepcopy(processes)
+        
+        for p in processes_copy:
+            for t in p.threads:
+                t.node = migration[t.node]
+                new_memory_access = {}
+                for node,access in t.memory_access_remainder.items():
+                    new_memory_access[migration[node]] = access
+                t.memory_access_remainder = new_memory_access
+        processes_copy_backup = copy.deepcopy(processes_copy)
+
+        finishtime = simulation_nomigration(machine, processes_copy, 0)    #
+        
+        if finishtime < best_finishtime:
+            best_finishtime = finishtime
+            best_situation_processes = copy.deepcopy(processes_copy_backup)
+        if finishtime > worse_finishtime:
+            worse_finishtime = finishtime
+            worse_situation_processes = copy.deepcopy(processes_copy_backup)
+
+    return best_situation_processes, worse_situation_processes
+
+def test1():
+    bandwidth = [
+        [0, 3000000000, 1000000000, 1000000000],
+        [3000000000, 0, 1000000000, 1000000000],
+        [1000000000, 1000000000, 0, 7000000000],
+        [1000000000, 1000000000, 7000000000, 0]
+    ]
+
+    machine = Machine(bandwidth)
+    processes = []
+    
+    threads = []
+    t = Thread(0, 200, 100000, 0, {1:3000000000})
+    threads.append(t)
+    
+    t = Thread(1, 400, 100000, 0, {0:3000000000})
+    threads.append(t)
+    p = Process(threads)
+    processes.append(p)
+
+    threads = []
+    t = Thread(2, 30, 100000, 0, {3:5000})
+    threads.append(t)
+    t = Thread(3, 300, 100000, 0, {2:5000})
+    threads.append(t)
+    p = Process(threads)
+    processes.append(p)
+
+    best_placement, worse_placement = find_best_and_worse(machine, processes)
+
+    print("test1:")
+    simulation(machine, processes)
+    simulation_nomigration(machine, best_placement)
+    simulation_nomigration(machine, worse_placement)
+
 
 def test_migration():
     bandwidth = [
@@ -274,10 +380,22 @@ test_migration：worse的情况加上算法
 束的时间
 """
 if __name__ == "__main__":
-    print("migration:")
-    test_migration()
-    print("best placement:")
-    test_best()
-    print("worse placement:")
-    test_worse()
+    test1()
+##    print("migration:")
+##    test_migration()
+##    print("best placement:")
+##    test_best()
+##    print("worse placement:")
+##    test_worse()
+
+bandwidth = [    # bytes/s
+    [0, 56, 43, 38, 30, 29, 30, 30],
+    [56, 0, 38, 43, 30, 29, 29, 30],
+    [30, 19, 0, 56, 30, 43, 19, 19],
+    [19, 30, 56, 0, 30, 30, 19, 19],
+    [30, 30, 30, 30, 0, 56, 43, 19],
+    [19, 19, 43, 30, 56, 0, 43, 30],
+    [43, 38, 30, 30, 30, 19, 0, 56],
+    [19, 30, 38, 38, 29, 30, 56, 0],
+]
     
